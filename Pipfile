@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "*"
+dj-database-url = "*"
+pytest-django = "*"
+pytest-cov = "*"
+django-keyset-pagination-plus = {editable = true, path = "."}
+
+[dev-packages]
+
+[requires]
+python_version = "3.7"
