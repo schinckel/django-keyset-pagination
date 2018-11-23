@@ -11,13 +11,25 @@ except NameError:
     text = (str,)
 
 
-def build_filter(key, value, include=False):
+def build_filter(key, value, include=False, flip=False):
     # Examine the key: if it has a - prefix, then that means we were sorted
     # DESC, and thus need to use lt. Otherwise it will be gt.
     # If `include`, that means lte/gte.
     if key[0] == '-':
-        return models.Q(**{'{}__lt{}'.format(key.lstrip('-'), 'e' if include else ''): value})
-    return models.Q(**{'{}__gt{}'.format(key, 'e' if include else ''): value})
+        direction = True
+    else:
+        direction = False
+
+    if flip:
+        direction = not direction
+
+    return models.Q(**{
+        '{key}__{direction}{e}'.format(
+            key=key.lstrip('-'),
+            direction='lt' if direction else 'gt',
+            e='e' if include else ''
+        ): value
+    })
 
 
 class KeysetPaginator(Paginator):
@@ -29,17 +41,20 @@ class KeysetPaginator(Paginator):
         if number is None:
             object_list = self.object_list
         else:
+            flip = number[0]
+            values = number[1:]
+
             # We can build up the various Q objects we will need for this query beforehand.
             # These are the filters that apply to break a tie on the previous level.
             key_filters = [
-                build_filter(key, value)
-                for key, value in zip(self.keys, number)
+                build_filter(key, value, flip=flip)
+                for key, value in zip(self.keys, values)
             ]
             # And these are the filters that detect a tie at each level.
             equality_filters = [
                 models.Q(**{
                     key.lstrip('-'): value
-                    for key, value in zip(self.keys, number)
+                    for key, value in zip(self.keys, values)
                 })
             ]
 
@@ -54,8 +69,15 @@ class KeysetPaginator(Paginator):
             # filters above and "A <= ?" (or >=). This allows the query planner to use
             # and index on that column.
             object_list = self.object_list.filter(
-                page_filter & build_filter(self.keys[0], number[0], True)
+                page_filter & build_filter(self.keys[0], values[0], include=True, flip=flip)
             )
+
+            if flip:
+                reversed_keys = [
+                    '-' + key if key[0] != '-' else key.lstrip('-')
+                    for key in self.keys
+                ]
+                object_list = object_list.order_by(*reversed_keys)
 
         return KeysetPage(object_list[:self.per_page], number, self)
 
@@ -67,27 +89,34 @@ class KeysetPaginator(Paginator):
             return None
         if isinstance(number, text):
             number = json.loads(number)
-        if len(number) != len(self.keys):
+        if len(number) != 1 + len(self.keys):
             raise InvalidPage('Key length mismatch')
         return number
 
 
 class KeysetPage(Page):
+    def __init__(self, object_list, number, paginator):
+        if number and number[0]:
+            object_list = reversed(list(object_list))
+        super(KeysetPage, self).__init__(object_list, number, paginator)
+
     def has_next(self):
         return True
 
     def has_previous(self):
         return False
 
-    def next_page_number(self):
-        last_instance = self[-1]
-        return json.dumps([
-            getattr(last_instance, key.lstrip('-'))
+    def _key_for_instance(self, instance, prev=False):
+        return json.dumps([prev] + [
+            getattr(instance, key.lstrip('-'))
             for key in self.paginator.keys
         ], default=str)
 
+    def next_page_number(self):
+        return self._key_for_instance(self[-1])
+
     def previous_page_number(self):
-        return None
+        return self._key_for_instance(self[0], True)
 
     def start_index(self):
         return 0

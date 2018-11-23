@@ -13,11 +13,24 @@ In order to use the paginator within this package, you will probably also need t
         paginate_by = 10
         queryset = MyModel.objects.order_by('-timestamp', 'group')
 
-You won't be able to iterate through page numbers in a template in the same way: you are limited to next (and hopefully soon previous) pages. Otherwise, you construct them in largely the same way:
+You won't be able to iterate through page numbers in a template in the same way: you are limited to next and previous pages. Otherwise, you construct them in largely the same way:
+
+    <a href="{% url 'mymodel:list' %}?page={{ page_obj.previous_page_number }}">
+      Prev Page
+    </a>
 
     <a href="{% url 'mymodel:list' %}?page={{ page_obj.next_page_number }}">
+      Next Page
+    </a>
 
 However, I like to use GET forms to [enable pagination of filtered results](https://schinckel.net/2014/08/17/leveraging-html-and-django-forms%3A-pagination-of-filtered-results/):
+
+    <button form="target-form"
+            name="page"
+            value="{{ page_obj.previous_page_number }}"
+            type="submit">
+      &larr; Prev Page
+    </button>
 
     <button form="target-form"
             name="page"
