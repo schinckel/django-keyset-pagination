@@ -41,6 +41,9 @@ class KeysetPaginator(Paginator):
         if number is None:
             object_list = self.object_list
         else:
+            # The first part of our key is always the "previous" link indicator. If this
+            # value is true, that means this is a previous link, so we need to reverse all
+            # of the tests and the ordering later.
             flip = number[0]
             values = number[1:]
 
@@ -72,6 +75,10 @@ class KeysetPaginator(Paginator):
                 page_filter & build_filter(self.keys[0], values[0], include=True, flip=flip)
             )
 
+            # If we are using a "previous" link, we need to flip all of the keys around
+            # to generate the reverse ordering. We have to rely on the KeysetPage object
+            # to notice that we have done this, and it will reverse the results it
+            # gets from the database.
             if flip:
                 reversed_keys = [
                     '-' + key if key[0] != '-' else key.lstrip('-')
@@ -97,14 +104,18 @@ class KeysetPaginator(Paginator):
 class KeysetPage(Page):
     def __init__(self, object_list, number, paginator):
         if number and number[0]:
-            object_list = reversed(list(object_list))
+            object_list = reversed(object_list)
         super(KeysetPage, self).__init__(object_list, number, paginator)
 
     def has_next(self):
         return True
 
     def has_previous(self):
-        return False
+        # The only time we know we don't have a previous page is when we are the
+        # first page, which we _might_ know, when we were instantiated with
+        # number=None. If we navigated back here using a "Previous" link, we won't
+        # know.
+        return self.number
 
     def _key_for_instance(self, instance, prev=False):
         return json.dumps([prev] + [
