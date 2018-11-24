@@ -4,6 +4,7 @@ import json
 
 from django.core.paginator import Paginator, Page, InvalidPage
 from django.db import models
+from django.utils.functional import cached_property
 
 try:
     text = (unicode, str)
@@ -37,54 +38,60 @@ class KeysetPaginator(Paginator):
         super(KeysetPaginator, self).__init__(object_list, per_page, orphans, allow_empty_first_page)
         self.keys = object_list.query.order_by
 
+    def _get_page_filters(self, number):
+        # The first part of our key is always the "previous" link indicator. If this
+        # value is true, that means this is a previous link, so we need to reverse all
+        # of the tests and the ordering later.
+        flip = number[0]
+        values = number[1:]
+
+        # We can build up the various Q objects we will need for this query beforehand.
+        # These are the filters that apply to break a tie on the previous level.
+        key_filters = [
+            build_filter(key, value, flip=flip)
+            for key, value in zip(self.keys, values)
+        ]
+        # And these are the filters that detect a tie at each level.
+        equality_filters = [
+            models.Q(**{
+                key.lstrip('-'): value
+                for key, value in zip(self.keys, values)
+            })
+        ]
+
+        # We want to use (A < ? OR (A = ? AND B < ?) OR (A = ? AND B = ? AND C < ?))
+        # Except that the < could be a > depending upon the sort direction.
+        page_filters = reduce(or_, [
+            reduce(and_, [key_filter] + equality_filters[:i - 1])
+            for i, key_filter in enumerate(key_filters)
+        ])
+        # To make the query planner able to use an index, we use an AND with the
+        # filters above and "A <= ?" (or >=). This allows the query planner to use
+        # and index on that column.
+        index_helper = build_filter(self.keys[0], values[0], include=True, flip=flip)
+
+        return page_filters & index_helper
+
+    def _get_ordering(self, number):
+        # If we are using a "previous" link, we need to flip all of the keys around
+        # to generate the reverse ordering. We have to rely on the KeysetPage object
+        # to notice that we have done this, and it will reverse the results it
+        # gets from the database.
+
+        if number[0]:
+            return [
+                '-' + key if key[0] != '-' else key.lstrip('-')
+                for key in self.keys
+            ]
+        return self.keys
+
     def _get_page(self, number):
         if number is None:
             object_list = self.object_list
         else:
-            # The first part of our key is always the "previous" link indicator. If this
-            # value is true, that means this is a previous link, so we need to reverse all
-            # of the tests and the ordering later.
-            flip = number[0]
-            values = number[1:]
-
-            # We can build up the various Q objects we will need for this query beforehand.
-            # These are the filters that apply to break a tie on the previous level.
-            key_filters = [
-                build_filter(key, value, flip=flip)
-                for key, value in zip(self.keys, values)
-            ]
-            # And these are the filters that detect a tie at each level.
-            equality_filters = [
-                models.Q(**{
-                    key.lstrip('-'): value
-                    for key, value in zip(self.keys, values)
-                })
-            ]
-
-            # We want to use (A < ? OR (A = ? AND B < ?) OR (A = ? AND B = ? AND C < ?))
-            # Except that the < could be a > depending upon the sort direction.
-            page_filter = reduce(or_, [
-                reduce(and_, [key_filter] + equality_filters[:i - 1])
-                for i, key_filter in enumerate(key_filters)
-            ])
-
-            # To make the query planner able to use an index, we will use an AND with the
-            # filters above and "A <= ?" (or >=). This allows the query planner to use
-            # and index on that column.
             object_list = self.object_list.filter(
-                page_filter & build_filter(self.keys[0], values[0], include=True, flip=flip)
-            )
-
-            # If we are using a "previous" link, we need to flip all of the keys around
-            # to generate the reverse ordering. We have to rely on the KeysetPage object
-            # to notice that we have done this, and it will reverse the results it
-            # gets from the database.
-            if flip:
-                reversed_keys = [
-                    '-' + key if key[0] != '-' else key.lstrip('-')
-                    for key in self.keys
-                ]
-                object_list = object_list.order_by(*reversed_keys)
+                self._get_page_filters(number)
+            ).order_by(*self._get_ordering(number))
 
         return KeysetPage(object_list[:self.per_page + 1], number, self)
 
@@ -103,36 +110,53 @@ class KeysetPaginator(Paginator):
 
 class KeysetPage(Page):
     def __init__(self, object_list, number, paginator):
-        object_list = list(object_list)
-        self.continues = len(object_list) > paginator.per_page
+        self._object_list = object_list
+        self.number = number
         self.direction = 'previous' if number and number[0] else 'next'
-        object_list = object_list[:paginator.per_page]
+        self.paginator = paginator
+        self._continues = None
+
+    @cached_property
+    def continues(self):
+        if self._continues is None:
+            # This will set the _continues instance variable to the correct value.
+            self.object_list
+        return self._continues
+
+    @cached_property
+    def object_list(self):
+        object_list = self._object_list
+        if not isinstance(object_list, list):
+            object_list = list(object_list)
+
+        # What about orphans?
+        self._continues = len(object_list) > self.paginator.per_page
+        object_list = object_list[:self.paginator.per_page]
         if self.direction == 'previous':
-            object_list = reversed(object_list)
-        super(KeysetPage, self).__init__(object_list, number, paginator)
+            return reversed(object_list)
+        return object_list
 
     def has_next(self):
+        # We pre-fetch one extra object - this enables us to detect if we
+        # have another page after us. We can assume that if we did a "previous"
+        # page fetch, that means there were results in the previous page, else
+        # we know for sure by the fact we got more than our allocated items.
         return self.direction == 'previous' or self.continues
-        # If we are doing a "next" page, then look at the number of results.
-        # If that is fewer than our per-page amount, that means we either have
-        # more results, or we can't know (because we got exactly all results).
-        if not self.number or not self.number[0]:
-            return len(self) == self.paginator.per_page
-        return True
 
     def has_previous(self):
+        # If we are doing a "next" page fetch, then we know we have previous results
+        # if we fetched anything other than the first page (which will have an empty
+        # number). Otherwise, we use the fetch of more than our amount to detect in
+        # the case of a "previous" fetch if we have another previous page.
         if self.direction == 'next':
             return self.number
         return self.continues
-        return (self.direction == 'next' and self.number) or self.continues
-        # If we are doing a "previous" page, and we have fewer than the per-page
-        # results, that means we don't have a previous page. Otherwise, assume
-        # there is a previous page unless we _know_ we are the first page.
-        if self.number and self.number[0]:
-            return len(self) == self.paginator.per_page
-        return self.number
 
     def _key_for_instance(self, instance, prev=False):
+        # We need to build up a special key that contains the direction we need to fetch
+        # the target page in, and the data from the first/last item in our object_list.
+        # JSON should be fine here? As long as the str(unknown_type) gives us something
+        # we will be able to push back into the database for querying.
         return json.dumps([prev] + [
             getattr(instance, key.lstrip('-'))
             for key in self.paginator.keys
@@ -144,8 +168,12 @@ class KeysetPage(Page):
     def previous_page_number(self):
         return self._key_for_instance(self[0], True)
 
+    @cached_property
+    def _start_index(self):
+        pass
+
     def start_index(self):
-        return 0
+        return self._start_index
 
     def end_index(self):
-        return 1
+        return self.start_index() + len(self)
