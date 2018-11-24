@@ -1,12 +1,24 @@
+import pytest
+
 from keyset_pagination.paginator import KeysetPaginator
 
 from ..models import Event
 
 
-def test_paginator_single_page():
+@pytest.fixture
+def events():
     Event.objects.bulk_create([
-        Event(timestamp='2017-01-01T01:23:45Z', reading=1)
+        Event(timestamp='2017-01-01T01:23:45Z', group="bar", reading=2),
+        Event(timestamp='2017-01-01T01:23:45Z', group="baz", reading=3),
+        Event(timestamp='2017-01-01T01:23:45Z', group="foo", reading=1),
+        Event(timestamp='2017-01-01T01:23:45Z', group="qux", reading=4),
+        Event(timestamp='2017-01-01T05:23:45Z', group="foo", reading=5),
+        Event(timestamp='2017-01-01T06:23:45Z', group="foo", reading=6),
     ])
+
+
+def test_paginator_single_page():
+    Event.objects.create(timestamp='2017-01-01T01:23:45Z', reading=1)
 
     paginator = KeysetPaginator(Event.objects.order_by('-timestamp'), 10)
     assert paginator.page(1).object_list[0].reading == 1
@@ -39,16 +51,7 @@ def test_paginator_multiple_pages():
     assert page.object_list[0].reading == 1
 
 
-def test_paginator_multiple_ordering_columns():
-    Event.objects.bulk_create([
-        Event(timestamp='2017-01-01T01:23:45Z', group="bar", reading=2),
-        Event(timestamp='2017-01-01T01:23:45Z', group="baz", reading=3),
-        Event(timestamp='2017-01-01T01:23:45Z', group="foo", reading=1),
-        Event(timestamp='2017-01-01T01:23:45Z', group="qux", reading=4),
-        Event(timestamp='2017-01-01T05:23:45Z', group="foo", reading=5),
-        Event(timestamp='2017-01-01T06:23:45Z', group="foo", reading=6),
-    ])
-
+def test_paginator_multiple_ordering_columns(events):
     paginator = KeysetPaginator(Event.objects.order_by('timestamp', 'group'), 3)
     page = paginator.page(1)
     assert page.next_page_number() == '[false, "2017-01-01 01:23:45+00:00", "foo"]'
@@ -62,16 +65,7 @@ def test_paginator_multiple_ordering_columns():
     assert [2, 3, 1] == [x.reading for x in page.object_list]
 
 
-def test_paginator_previous_links():
-    Event.objects.bulk_create([
-        Event(timestamp='2017-01-01T01:23:45Z', group="bar", reading=2),
-        Event(timestamp='2017-01-01T01:23:45Z', group="baz", reading=3),
-        Event(timestamp='2017-01-01T01:23:45Z', group="foo", reading=1),
-        Event(timestamp='2017-01-01T01:23:45Z', group="qux", reading=4),
-        Event(timestamp='2017-01-01T05:23:45Z', group="foo", reading=5),
-        Event(timestamp='2017-01-01T06:23:45Z', group="foo", reading=6),
-    ])
-
+def test_paginator_previous_links(events):
     paginator = KeysetPaginator(Event.objects.order_by('timestamp', 'group'), 2)
     page = paginator.page(1)
     assert page.next_page_number() == '[false, "2017-01-01 01:23:45+00:00", "baz"]'

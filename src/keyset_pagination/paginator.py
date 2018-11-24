@@ -86,7 +86,7 @@ class KeysetPaginator(Paginator):
                 ]
                 object_list = object_list.order_by(*reversed_keys)
 
-        return KeysetPage(object_list[:self.per_page], number, self)
+        return KeysetPage(object_list[:self.per_page + 1], number, self)
 
     def page(self, number):
         return self._get_page(self.validate_number(number))
@@ -103,18 +103,33 @@ class KeysetPaginator(Paginator):
 
 class KeysetPage(Page):
     def __init__(self, object_list, number, paginator):
-        if number and number[0]:
+        object_list = list(object_list)
+        self.continues = len(object_list) > paginator.per_page
+        self.direction = 'previous' if number and number[0] else 'next'
+        object_list = object_list[:paginator.per_page]
+        if self.direction == 'previous':
             object_list = reversed(object_list)
         super(KeysetPage, self).__init__(object_list, number, paginator)
 
     def has_next(self):
+        return self.direction == 'previous' or self.continues
+        # If we are doing a "next" page, then look at the number of results.
+        # If that is fewer than our per-page amount, that means we either have
+        # more results, or we can't know (because we got exactly all results).
+        if not self.number or not self.number[0]:
+            return len(self) == self.paginator.per_page
         return True
 
     def has_previous(self):
-        # The only time we know we don't have a previous page is when we are the
-        # first page, which we _might_ know, when we were instantiated with
-        # number=None. If we navigated back here using a "Previous" link, we won't
-        # know.
+        if self.direction == 'next':
+            return self.number
+        return self.continues
+        return (self.direction == 'next' and self.number) or self.continues
+        # If we are doing a "previous" page, and we have fewer than the per-page
+        # results, that means we don't have a previous page. Otherwise, assume
+        # there is a previous page unless we _know_ we are the first page.
+        if self.number and self.number[0]:
+            return len(self) == self.paginator.per_page
         return self.number
 
     def _key_for_instance(self, instance, prev=False):
