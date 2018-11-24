@@ -85,6 +85,14 @@ class KeysetPaginator(Paginator):
             ]
         return self.keys
 
+    def _get_prior_item_count(self, number):
+        if number is None:
+            return 1
+
+        return self.object_list.filter(
+            self._get_page_filters([True] + number[1:])
+        ).count()
+
     def _get_page(self, number):
         if number is None:
             object_list = self.object_list
@@ -115,6 +123,17 @@ class KeysetPage(Page):
         self.direction = 'previous' if number and number[0] else 'next'
         self.paginator = paginator
         self._continues = None
+
+    def __repr__(self):
+        # I'm not sure we want to be doing this: I think it may result in more
+        # queries. It will do for now though.
+        return "<KeysetPage: {} of {}>".format(
+            self.page_index, self.paginator.num_pages
+        )
+
+    @cached_property
+    def page_index(self):
+        return int(self.start_index() / self.paginator.per_page) + 1
 
     @cached_property
     def continues(self):
@@ -170,10 +189,16 @@ class KeysetPage(Page):
 
     @cached_property
     def _start_index(self):
-        pass
+        if not self.paginator.count:
+            return 0
+        if not self.has_previous():
+            return 1
+        return self.paginator._get_prior_item_count(self.number) + 2  # ??
 
     def start_index(self):
         return self._start_index
 
     def end_index(self):
-        return self.start_index() + len(self)
+        if not len(self):
+            return self.start_index()
+        return self.start_index() + len(self) - 1
