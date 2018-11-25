@@ -4,3 +4,5 @@ syntax: glob
 .coverage
 .eggs
 htmlcov/*
+*.pyc
+*.egg-info/
