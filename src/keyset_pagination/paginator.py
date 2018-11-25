@@ -1,3 +1,10 @@
+"""
+A Paginator that uses Keyset Pagination to allow for efficient fetching
+of subsequent pages.
+
+Probably requires you use the `keyset_pagination.mixin.PaginateMixin` in
+your view.
+"""
 import json
 from functools import reduce
 from operator import and_, or_
@@ -7,19 +14,18 @@ from django.db import models
 from django.utils.functional import cached_property
 
 try:
-    text = (unicode, str)
+    text = (unicode, str)   # NOQA
 except NameError:
-    text = (str,)
+    text = (str,)           # NOQA
 
 
 def build_filter(key, value, include=False, flip=False):
-    # Examine the key: if it has a - prefix, then that means we were sorted
-    # DESC, and thus need to use lt. Otherwise it will be gt.
-    # If `include`, that means lte/gte.
-    if key[0] == '-':
-        direction = True
-    else:
-        direction = False
+    """
+    Examine the key: if it has a - prefix, then that means we were sorted
+    DESC, and thus need to use lt. Otherwise it will be gt.
+    If `include`, that means lte/gte.
+    """
+    direction = key[0] == '-'
 
     if flip:
         direction = not direction
@@ -34,6 +40,8 @@ def build_filter(key, value, include=False, flip=False):
 
 
 class KeysetPaginator(Paginator):
+    "Keyset Pagination: does not use OFFSET."
+
     def __init__(self, object_list, per_page, orphans=0, allow_empty_first_page=True):
         super(KeysetPaginator, self).__init__(object_list, per_page, orphans, allow_empty_first_page)
         self.keys = object_list.query.order_by
@@ -93,7 +101,12 @@ class KeysetPaginator(Paginator):
             self._get_page_filters([True] + number[1:])
         ).count()
 
-    def _get_page(self, number):
+    def _get_page(self, *args, **kwargs):
+        return KeysetPage(*args, **kwargs)
+
+    def page(self, number):
+        number = self.validate_number(number)
+
         if number is None:
             object_list = self.object_list
         else:
@@ -101,10 +114,7 @@ class KeysetPaginator(Paginator):
                 self._get_page_filters(number)
             ).order_by(*self._get_ordering(number))
 
-        return KeysetPage(object_list[:self.per_page + 1], number, self)
-
-    def page(self, number):
-        return self._get_page(self.validate_number(number))
+        return self._get_page(object_list[:self.per_page + 1], number, self)
 
     def validate_number(self, number):
         if not number or number == 1:
@@ -117,7 +127,13 @@ class KeysetPaginator(Paginator):
 
 
 class KeysetPage(Page):
+    "Custom Page for KeysetPaginator"
+    # pylint: disable=too-many-ancestors
+
     def __init__(self, object_list, number, paginator):
+        # We can't call our ancestor's __init__, because that will set
+        # self.object_list, which we don't want to set.
+        # pylint: disable=super-init-not-called
         self._object_list = object_list
         self.number = number
         self.direction = 'previous' if number and number[0] else 'next'
@@ -127,23 +143,26 @@ class KeysetPage(Page):
     def __repr__(self):
         # I'm not sure we want to be doing this: I think it may result in more
         # queries. It will do for now though.
-        return "<KeysetPage: {} of {}>".format(
-            self.page_index, self.paginator.num_pages
-        )
+        return "<KeysetPage: {} of {}>".format(self.page_index, self.paginator.num_pages)
 
     @cached_property
     def page_index(self):
+        "The index of this page in the total number of pages."
         return int(self.start_index() / self.paginator.per_page) + 1
 
     @cached_property
     def continues(self):
+        "Does this queryset continue in the direction it was fetched?"
         if self._continues is None:
             # This will set the _continues instance variable to the correct value.
+            # pylint: disable=pointless-statement
             self.object_list
         return self._continues
 
     @cached_property
-    def object_list(self):
+    def object_list(self):  # NOQA
+        # We need to replace the normal attribute with a cached_property, so we can
+        # have it more lazily calculated, because we need to set
         object_list = self._object_list
         if not isinstance(object_list, list):
             object_list = list(object_list)
@@ -193,12 +212,12 @@ class KeysetPage(Page):
             return 0
         if not self.has_previous():
             return 1
-        return self.paginator._get_prior_item_count(self.number) + 2  # ??
+        return self.paginator._get_prior_item_count(self.number) + 2  # NOQA
 
     def start_index(self):
         return self._start_index
 
     def end_index(self):
-        if not len(self):
+        if not len(self):   # NOQA
             return self.start_index()
         return self.start_index() + len(self) - 1
