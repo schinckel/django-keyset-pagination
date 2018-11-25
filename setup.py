@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='django-keyset-pagination-plus',
-    version='0.1.0',
+    version='0.8.0',
     description='Keyset Pagination (seek method) for django.',
     url='https://bitbucket.org/schinckel/django-keyset-pagination',
     author='Matthew Schinckel',
