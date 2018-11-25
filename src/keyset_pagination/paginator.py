@@ -5,6 +5,7 @@ of subsequent pages.
 Probably requires you use the `keyset_pagination.mixin.PaginateMixin` in
 your view.
 """
+
 import json
 from functools import reduce
 from operator import and_, or_
