@@ -1,8 +1,8 @@
+import json
 from functools import reduce
 from operator import and_, or_
-import json
 
-from django.core.paginator import Paginator, Page, InvalidPage
+from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
 from django.utils.functional import cached_property
 
