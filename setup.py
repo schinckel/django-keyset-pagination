@@ -18,7 +18,7 @@ setup(
     setup_requires=["pytest-runner", ],
     tests_require=["pytest", ],
     classifiers=[
-        'Development Status :: 1 - Alpha',
+        'Development Status :: 4 - Beta',
         'Framework :: Django :: 2.0',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',

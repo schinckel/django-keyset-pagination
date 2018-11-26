@@ -6,3 +6,5 @@ syntax: glob
 htmlcov/*
 *.pyc
 *.egg-info/
+dist/*
+build/*
