@@ -170,9 +170,12 @@ class KeysetPage(Page):
 
         # What about orphans?
         self._continues = len(object_list) > self.paginator.per_page
+
         object_list = object_list[:self.paginator.per_page]
+
         if self.direction == 'previous':
-            return reversed(object_list)
+            object_list = list(reversed(object_list))
+
         return object_list
 
     def has_next(self):
