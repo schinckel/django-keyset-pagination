@@ -205,10 +205,12 @@ class KeysetPage(Page):
         ], default=str)
 
     def next_page_number(self):
-        return self._key_for_instance(self[-1])
+        if self.has_next():
+            return self._key_for_instance(self[-1])
 
     def previous_page_number(self):
-        return self._key_for_instance(self[0], True)
+        if self.has_previous():
+            return self._key_for_instance(self[0], True)
 
     @cached_property
     def _start_index(self):
