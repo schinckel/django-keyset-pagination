@@ -78,7 +78,7 @@ def test_paginator_previous_links(events):
     page = paginator.page(page.next_page_number())
     assert [5, 6] == [x.reading for x in page.object_list]
     assert not page.has_next()
-    assert page.next_page_number() == None
+    assert page.next_page_number() is None
 
     page = paginator.page(page.previous_page_number())
     assert [1, 4] == [x.reading for x in page.object_list]
