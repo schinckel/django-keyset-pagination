@@ -151,6 +151,7 @@ class KeysetPage(Page):
 
     @property
     def page_index(self):
+        "The page_index of a keyset page is always None."
         return None
 
     @property
@@ -209,10 +210,12 @@ class KeysetPage(Page):
     def next_page_number(self):
         if self.has_next():
             return self._key_for_instance(self[-1])
+        return None
 
     def previous_page_number(self):
         if self.has_previous():
             return self._key_for_instance(self[0], True)
+        return None
 
     def start_index(self):
         return None
