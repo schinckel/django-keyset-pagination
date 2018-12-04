@@ -12,7 +12,6 @@ from operator import and_, or_
 
 from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
-from django.utils.functional import cached_property
 
 try:
     text = (unicode, str)   # NOQA
@@ -150,11 +149,11 @@ class KeysetPage(Page):
         # queries. It will do for now though.
         return "<KeysetPage: {} of {}>".format(self.page_index, self.paginator.num_pages)
 
-    @cached_property
+    @property
     def page_index(self):
         return None
 
-    @cached_property
+    @property
     def continues(self):
         "Does this queryset continue in the direction it was fetched?"
         if self._continues is None:
@@ -163,7 +162,7 @@ class KeysetPage(Page):
             self.object_list
         return self._continues
 
-    @cached_property
+    @property
     def object_list(self):  # NOQA
         # We need to replace the normal attribute with a cached_property, so we can
         # have it more lazily calculated, because we need to set
