@@ -94,14 +94,6 @@ class KeysetPaginator(Paginator):
             ]
         return self.keys
 
-    def _get_prior_item_count(self, number):
-        if number is None:
-            return 1
-
-        return self.object_list.filter(
-            self._get_page_filters([True] + number[1:])
-        ).count()
-
     def _get_page(self, *args, **kwargs):
         return KeysetPage(*args, **kwargs)
 
@@ -126,6 +118,18 @@ class KeysetPaginator(Paginator):
             raise InvalidPage('Key length mismatch')
         return number
 
+    @property
+    def count(self):
+        return None
+
+    @property
+    def num_pages(self):
+        return None
+
+    @property
+    def page_range(self):
+        return []
+
 
 class KeysetPage(Page):
     "Custom Page for KeysetPaginator"
@@ -148,8 +152,7 @@ class KeysetPage(Page):
 
     @cached_property
     def page_index(self):
-        "The index of this page in the total number of pages."
-        return int(self.start_index() / self.paginator.per_page) + 1
+        return None
 
     @cached_property
     def continues(self):
@@ -212,18 +215,8 @@ class KeysetPage(Page):
         if self.has_previous():
             return self._key_for_instance(self[0], True)
 
-    @cached_property
-    def _start_index(self):
-        if not self.paginator.count:
-            return 0
-        if not self.has_previous():
-            return 1
-        return self.paginator._get_prior_item_count(self.number) + 2  # NOQA
-
     def start_index(self):
-        return self._start_index
+        return None
 
     def end_index(self):
-        if not len(self):   # NOQA
-            return self.start_index()
-        return self.start_index() + len(self) - 1
+        return None

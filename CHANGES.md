@@ -1,5 +1,7 @@
 # Release notes.
 
+* 0.9.0: Stop supporting page index and total item count.
+
 * 0.8.5: Don't fail to render on empty result set.
 
 * 0.8.3: Allow installing in Python 2.
