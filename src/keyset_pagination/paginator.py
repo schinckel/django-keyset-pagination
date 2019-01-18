@@ -63,8 +63,8 @@ class KeysetPaginator(Paginator):
         equality_filters = [
             models.Q(**{
                 key.lstrip('-'): value
-                for key, value in zip(self.keys, values)
-            })
+                for key, value in zip(self.keys[:i], values)
+            }) for i in range(len(self.keys))
         ]
 
         # We want to use (A < ? OR (A = ? AND B < ?) OR (A = ? AND B = ? AND C < ?))
