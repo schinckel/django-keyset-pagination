@@ -84,7 +84,6 @@ def test_paginator_previous_links(events):
     assert [1, 4] == [x.reading for x in page.object_list]
 
 
-@pytest.mark.slow
 def test_paginator_with_multiple_ordering_keys():
     Event.objects.bulk_create([
         Event(timestamp='2019-01-01T01:02:03Z', group='foo', reading=i) for i in range(20)
