@@ -194,7 +194,7 @@ class KeysetPage(Page):
         # number). Otherwise, we use the fetch of more than our amount to detect in
         # the case of a "previous" fetch if we have another previous page.
         if self.direction == 'next':
-            return self.number
+            return self.number and len(self._object_list)
         return self.continues
 
     def _key_for_instance(self, instance, prev=False):
