@@ -39,6 +39,16 @@ def build_filter(key, value, include=False, flip=False):
     })
 
 
+def attr_getter(instance, key):
+    if key[0] == '-':
+        key = key[1:]
+
+    for part in key.split('__'):
+        instance = getattr(instance, part)
+
+    return instance
+
+
 class KeysetPaginator(Paginator):
     "Keyset Pagination: does not use OFFSET."
 
@@ -203,7 +213,7 @@ class KeysetPage(Page):
         # JSON should be fine here? As long as the str(unknown_type) gives us something
         # we will be able to push back into the database for querying.
         return json.dumps([prev] + [
-            getattr(instance, key.lstrip('-'))
+            attr_getter(instance, key)
             for key in self.paginator.keys
         ], default=str)
 
