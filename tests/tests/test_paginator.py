@@ -2,7 +2,7 @@ import pytest
 
 from keyset_pagination.paginator import KeysetPaginator
 
-from ..models import Event
+from ..models import Event, Location
 
 
 @pytest.fixture
@@ -89,6 +89,23 @@ def test_paginator_with_multiple_ordering_keys():
         Event(timestamp='2019-01-01T01:02:03Z', group='foo', reading=i) for i in range(20)
     ])
     paginator = KeysetPaginator(Event.objects.order_by('-timestamp', 'group', 'pk'), 10)
+    page = paginator.page(1)
+    assert 10 == len(page.object_list)
+    assert page.has_next()
+    assert not page.has_previous()
+
+    page = paginator.page(page.next_page_number())
+    assert 10 == len(page.object_list)
+    assert page.has_previous()
+    assert not page.has_next()
+
+
+def test_paginator_lookup_keys():
+    location = Location.objects.create(name='A')
+    Event.objects.bulk_create([
+        Event(timestamp='2019-01-01T01:02:03Z', group='foo', reading=i, location=location) for i in range(20)
+    ])
+    paginator = KeysetPaginator(Event.objects.order_by('location__name', 'pk'), 10)
     page = paginator.page(1)
     assert 10 == len(page.object_list)
     assert page.has_next()
