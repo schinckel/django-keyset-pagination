@@ -1,6 +1,6 @@
 # Release notes.
 
-* 0.9.3: Support ordering keys that follow lookups. Using these is at your own risk: You must ensure that you are using .select_related(), or it will trigger another database fetch for each lookup. This should only apply to the first/last instances, others will not be calculated.
+* 0.9.4: Support ordering keys that follow lookups. Using these is at your own risk: You must ensure that you are using .select_related(), or it will trigger another database fetch for each lookup. This should only apply to the first/last instances, others will not be calculated.
 
 * 0.9.2: Fix issues with pagination boundaries when there are more than two ordering keys, and objects cross over a boundary that can only be discriminated by the last sort key.
 
