@@ -12,7 +12,6 @@ from operator import and_, or_
 
 from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
-from django.utils.functional import cached_property
 
 try:
     text = (unicode, str)   # NOQA
@@ -64,8 +63,8 @@ class KeysetPaginator(Paginator):
         equality_filters = [
             models.Q(**{
                 key.lstrip('-'): value
-                for key, value in zip(self.keys, values)
-            })
+                for key, value in zip(self.keys[:i], values)
+            }) for i in range(len(self.keys))
         ]
 
         # We want to use (A < ? OR (A = ? AND B < ?) OR (A = ? AND B = ? AND C < ?))
@@ -94,14 +93,6 @@ class KeysetPaginator(Paginator):
             ]
         return self.keys
 
-    def _get_prior_item_count(self, number):
-        if number is None:
-            return 1
-
-        return self.object_list.filter(
-            self._get_page_filters([True] + number[1:])
-        ).count()
-
     def _get_page(self, *args, **kwargs):
         return KeysetPage(*args, **kwargs)
 
@@ -126,6 +117,18 @@ class KeysetPaginator(Paginator):
             raise InvalidPage('Key length mismatch')
         return number
 
+    @property
+    def count(self):
+        return None
+
+    @property
+    def num_pages(self):
+        return None
+
+    @property
+    def page_range(self):
+        return []
+
 
 class KeysetPage(Page):
     "Custom Page for KeysetPaginator"
@@ -146,12 +149,12 @@ class KeysetPage(Page):
         # queries. It will do for now though.
         return "<KeysetPage: {} of {}>".format(self.page_index, self.paginator.num_pages)
 
-    @cached_property
+    @property
     def page_index(self):
-        "The index of this page in the total number of pages."
-        return int(self.start_index() / self.paginator.per_page) + 1
+        "The page_index of a keyset page is always None."
+        return None
 
-    @cached_property
+    @property
     def continues(self):
         "Does this queryset continue in the direction it was fetched?"
         if self._continues is None:
@@ -160,7 +163,7 @@ class KeysetPage(Page):
             self.object_list
         return self._continues
 
-    @cached_property
+    @property
     def object_list(self):  # NOQA
         # We need to replace the normal attribute with a cached_property, so we can
         # have it more lazily calculated, because we need to set
@@ -205,23 +208,17 @@ class KeysetPage(Page):
         ], default=str)
 
     def next_page_number(self):
-        return self._key_for_instance(self[-1])
+        if self.has_next():
+            return self._key_for_instance(self[-1])
+        return None
 
     def previous_page_number(self):
-        return self._key_for_instance(self[0], True)
-
-    @cached_property
-    def _start_index(self):
-        if not self.paginator.count:
-            return 0
-        if not self.has_previous():
-            return 1
-        return self.paginator._get_prior_item_count(self.number) + 2  # NOQA
+        if self.has_previous():
+            return self._key_for_instance(self[0], True)
+        return None
 
     def start_index(self):
-        return self._start_index
+        return None
 
     def end_index(self):
-        if not len(self):   # NOQA
-            return self.start_index()
-        return self.start_index() + len(self) - 1
+        return None
