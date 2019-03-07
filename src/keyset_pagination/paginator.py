@@ -52,9 +52,14 @@ def attr_getter(instance, key):
 class KeysetPaginator(Paginator):
     "Keyset Pagination: does not use OFFSET."
 
-    def __init__(self, object_list, per_page, orphans=0, allow_empty_first_page=True):
+    def __init__(self, object_list, per_page, orphans=0, allow_empty_first_page=True, keys=None):
+        self.keys = keys or object_list.query.order_by
+        if not self.keys:
+            raise ValueError(
+                'Unable to paginate when no keys are provided: either order the queryset by '
+                'at least one key, or provide a keys argument to the paginator.'
+            )
         super(KeysetPaginator, self).__init__(object_list, per_page, orphans, allow_empty_first_page)
-        self.keys = object_list.query.order_by
 
     def _get_page_filters(self, number):
         # The first part of our key is always the "previous" link indicator. If this

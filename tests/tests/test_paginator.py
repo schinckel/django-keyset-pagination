@@ -115,3 +115,8 @@ def test_paginator_lookup_keys():
     assert 10 == len(page.object_list)
     assert page.has_previous()
     assert not page.has_next()
+
+
+def test_friendly_error_when_no_keys():
+    with pytest.raises(ValueError):
+        KeysetPaginator(Event.objects.all(), 10)
