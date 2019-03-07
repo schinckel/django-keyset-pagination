@@ -7,3 +7,10 @@ class Event(models.Model):
     tag = models.TextField(null=True, blank=True)
     group = models.TextField(null=True, blank=True)
     reading = models.IntegerField()
+    location = models.ForeignKey(
+        'tests.Location', related_name='events', on_delete=models.CASCADE, null=True, blank=True,
+    )
+
+
+class Location(models.Model):
+    name = models.TextField(null=True, blank=True)
