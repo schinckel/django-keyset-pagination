@@ -23,20 +23,14 @@ def test_has_next_previous(events):
 
     assert page.has_next()
     assert not page.has_previous()
-    assert page.start_index() == 1
-    assert page.end_index() == 5
-    assert page.page_index == 1
 
     page = paginator.page(page.next_page_number())
     assert not page.has_next()
     assert page.has_previous()
-    assert page.start_index() == 6
-    assert page.page_index == 2
 
     page = paginator.page(page.previous_page_number())
     assert page.has_next()
     assert not page.has_previous()
-    assert page.page_index == 1
 
 
 def test_empty_results():
@@ -45,9 +39,6 @@ def test_empty_results():
 
     assert not page.has_next()
     assert not page.has_previous()
-    assert page.page_index == 1
-    assert page.start_index() == 0
-    assert page.end_index() == 0
 
 
 def test_invalid_page():
