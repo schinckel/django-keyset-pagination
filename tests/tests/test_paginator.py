@@ -120,3 +120,7 @@ def test_paginator_lookup_keys():
 def test_friendly_error_when_no_keys():
     with pytest.raises(ValueError):
         KeysetPaginator(Event.objects.all(), 10)
+
+
+def test_ignore_pagination_when_empty_list():
+    assert KeysetPaginator([], 10).object_list == []
