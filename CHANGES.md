@@ -1,5 +1,7 @@
 # Release notes.
 
+* 0.9.3: Fix an issue where we have an empty object_list, but still think we have a previous page.
+
 * 0.9.2: Fix issues with pagination boundaries when there are more than two ordering keys, and objects cross over a boundary that can only be discriminated by the last sort key.
 
 * 0.9.1: Prevent errors when no objects in queryset.
