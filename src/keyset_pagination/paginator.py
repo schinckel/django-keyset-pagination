@@ -52,12 +52,15 @@ def attr_getter(instance, key):
 class KeysetPaginator(Paginator):
     "Keyset Pagination: does not use OFFSET."
 
-    def __init__(self, object_list, per_page, orphans=0, allow_empty_first_page=True, keys=None):
-        self.keys = keys or object_list.query.order_by
+    def __init__(self, object_list, per_page, orphans=0, allow_empty_first_page=True):
+        if object_list == [] or object_list is None:
+            self.keys = ['pk']
+        else:
+            self.keys = object_list.query.order_by
+
         if not self.keys:
             raise ValueError(
-                'Unable to paginate when no keys are provided: either order the queryset by '
-                'at least one key, or provide a keys argument to the paginator.'
+                'Unable to paginate when no keys are provided: please order the queryset by at least one key.'
             )
         super(KeysetPaginator, self).__init__(object_list, per_page, orphans, allow_empty_first_page)
 
@@ -114,7 +117,7 @@ class KeysetPaginator(Paginator):
     def page(self, number):
         number = self.validate_number(number)
 
-        if number is None:
+        if number is None or not self.object_list:
             object_list = self.object_list
         else:
             object_list = self.object_list.filter(
