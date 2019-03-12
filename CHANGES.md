@@ -1,5 +1,7 @@
 # Release notes.
 
+* 0.9.6: Better handling of empty lists and missing ordering on querysets.
+
 * 0.9.5: Ensure the fixes from both 0.9.4 and 0.9.3 are in the same release.
 
 * 0.9.4: Support ordering keys that follow lookups. Using these is at your own risk: You must ensure that you are using .select_related(), or it will trigger another database fetch for each lookup. This should only apply to the first/last instances, others will not be calculated.
