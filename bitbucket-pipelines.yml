@@ -13,6 +13,8 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - pip install tox
           - tox --parallel auto
+        services:
+          - postgres
 
 definitions:
   services:
@@ -23,3 +25,6 @@ definitions:
 
     postgres:
       image: postgres
+      environment:
+        PG_USER: postgres
+        PG_PASS: postgres
