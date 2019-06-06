@@ -7,9 +7,24 @@ image: python:3.6.6
 
 pipelines:
   default:
+    variables:
+      MYSQL_PASSWORD: 'mysql'
+      MQSQL_USER: 'root'
+      PG_USER: 'postgres'
+      PG_PASS: 'postgres'
     - step:
         caches:
           - pip
         script: # Modify the commands below to build your repository.
           - pip install tox
           - tox --parallel auto
+
+definitions:
+  services:
+    mysql:
+      image: mysql:5.7
+      variables:
+        MYSQL_ROOT_PASSWORD: 'mysql'
+
+    postgres:
+      image: postgres
