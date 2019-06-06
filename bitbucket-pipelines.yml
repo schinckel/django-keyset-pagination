@@ -7,18 +7,12 @@ image: python:3.6.6
 
 pipelines:
   default:
-    variables:
-      MYSQL_PASSWORD: 'mysql'
-      MQSQL_USER: 'root'
-      PG_USER: 'postgres'
-      PG_PASS: 'postgres'
-    steps:
-      - step:
-          caches:
-            - pip
-          script: # Modify the commands below to build your repository.
-            - pip install tox
-            - tox --parallel auto
+    - step:
+        caches:
+          - pip
+        script: # Modify the commands below to build your repository.
+          - pip install tox
+          - tox --parallel auto
 
 definitions:
   services:
