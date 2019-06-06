@@ -23,7 +23,7 @@ try:
         skip = False
         valid_period = DateRangeField()
 
-except ModuleNotFoundError:
+except ImportError:  # ModuleNotFoundError is Python3+ only.
 
     class Period(models.Model):
         skip = True
