@@ -12,12 +12,13 @@ pipelines:
       MQSQL_USER: 'root'
       PG_USER: 'postgres'
       PG_PASS: 'postgres'
-    - step:
-        caches:
-          - pip
-        script: # Modify the commands below to build your repository.
-          - pip install tox
-          - tox --parallel auto
+    steps:
+      - step:
+          caches:
+            - pip
+          script: # Modify the commands below to build your repository.
+            - pip install tox
+            - tox --parallel auto
 
 definitions:
   services:
