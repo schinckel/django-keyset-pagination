@@ -127,10 +127,10 @@ class KeysetPaginator(Paginator):
         return self._get_page(object_list[:self.per_page + 1], number, self)
 
     def validate_number(self, number):
-        if not number or number == 1:
-            return None
         if isinstance(number, text):
             number = json.loads(number)
+        if not number or number == 1:
+            return None
         if len(number) != 1 + len(self.keys):
             raise InvalidPage('Key length mismatch')
         return number
