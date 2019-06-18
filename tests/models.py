@@ -14,3 +14,16 @@ class Event(models.Model):
 
 class Location(models.Model):
     name = models.TextField(null=True, blank=True)
+
+
+try:
+    from django.contrib.postgres.fields import DateRangeField
+
+    class Period(models.Model):
+        skip = False
+        valid_period = DateRangeField()
+
+except ImportError:  # ModuleNotFoundError is Python3+ only.
+
+    class Period(models.Model):
+        skip = True

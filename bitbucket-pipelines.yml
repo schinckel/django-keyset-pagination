@@ -3,7 +3,7 @@
 # Only use spaces to indent your .yml configuration.
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
-image: python:3.6.6
+image: python:3.7.3
 
 pipelines:
   default:
@@ -13,3 +13,18 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - pip install tox
           - tox --parallel auto
+        services:
+          - postgres
+
+definitions:
+  services:
+    mysql:
+      image: mysql:5.7
+      variables:
+        MYSQL_ROOT_PASSWORD: 'mysql'
+
+    postgres:
+      image: postgres
+      environment:
+        PG_USER: postgres
+        PG_PASS: postgres
