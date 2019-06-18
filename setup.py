@@ -1,10 +1,14 @@
 from setuptools import find_packages, setup
 
+with open('README.md', 'r') as readme:
+    long_description = readme.read()
+
 setup(
     name='django-keyset-pagination-plus',
     version='0.9.8',
     description='Keyset Pagination (seek method) for django.',
-    long_description=open('README.md').read(),
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://bitbucket.org/schinckel/django-keyset-pagination',
     author='Matthew Schinckel',
     author_email='matt@schinckel.net',
