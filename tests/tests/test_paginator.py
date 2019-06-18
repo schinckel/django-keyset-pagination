@@ -124,3 +124,9 @@ def test_friendly_error_when_no_keys():
 
 def test_ignore_pagination_when_empty_list():
     assert KeysetPaginator([], 10).object_list == []
+
+
+def test_1_as_string_is_a_valid_page_number(events):
+    paginator = KeysetPaginator(Event.objects.order_by('location__name', 'pk'), 5)
+    page = paginator.page('1')
+    assert 5 == len(page.object_list)
