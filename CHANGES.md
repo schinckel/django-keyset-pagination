@@ -1,5 +1,7 @@
 # Release notes.
 
+* 0.9.7: Correctly handle a page=1 input that comes from a view. This will be a string, which should be supported since we handle an integer of 1.
+
 * 0.9.6: Better handling of empty lists and missing ordering on querysets.
 
 * 0.9.5: Ensure the fixes from both 0.9.4 and 0.9.3 are in the same release.
