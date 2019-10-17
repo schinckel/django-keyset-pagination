@@ -1,6 +1,6 @@
 import pytest
 
-from keyset_pagination.paginator import KeysetPaginator
+from keyset_pagination.paginator import KeysetPaginator, InvalidPage
 
 from ..models import Event, Location
 
@@ -130,3 +130,12 @@ def test_1_as_string_is_a_valid_page_number(events):
     paginator = KeysetPaginator(Event.objects.order_by('location__name', 'pk'), 5)
     page = paginator.page('1')
     assert 5 == len(page.object_list)
+
+
+def test_invalid_page_number(events):
+    paginator = KeysetPaginator(Event.objects.order_by('location__name', 'pk'), 5)
+    with pytest.raises(InvalidPage):
+        paginator.page('2')
+
+    with pytest.raises(InvalidPage):
+        paginator.page('[2,true')

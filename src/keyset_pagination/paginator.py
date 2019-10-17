@@ -128,9 +128,14 @@ class KeysetPaginator(Paginator):
 
     def validate_number(self, number):
         if isinstance(number, text):
-            number = json.loads(number)
+            try:
+                number = json.loads(number)
+            except ValueError:
+                raise InvalidPage('Invalid key')
         if not number or number == 1:
             return None
+        if not isinstance(number, list):
+            raise InvalidPage('Invalid key')
         if len(number) != 1 + len(self.keys):
             raise InvalidPage('Key length mismatch')
         return number

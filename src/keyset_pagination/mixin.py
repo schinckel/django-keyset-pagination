@@ -32,6 +32,8 @@ class PaginateMixin:
             page_number = paginator.validate_number(page)
         except ValueError:
             raise Http404(_('Page could not be parsed.'))
+        # We let InvalidPage errors pass, because we'll deal with them in the next
+        # section.
 
         try:
             page = paginator.page(page_number)
