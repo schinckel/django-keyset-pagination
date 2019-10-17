@@ -1,5 +1,7 @@
 # Release notes.
 
+* 0.9.9: Gracefully handle a `page=<valid json but invalid key string>`. For instance, this could be `page=2`, which users could enter thinking they are clever.
+
 * 0.9.8: Correctly handle a page=1 input that comes from a view. This will be a string, which should be supported since we handle an integer of 1.
 
 * 0.9.6: Better handling of empty lists and missing ordering on querysets.

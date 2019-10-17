@@ -5,7 +5,7 @@ with open('README.md', 'r') as readme:
 
 setup(
     name='django-keyset-pagination-plus',
-    version='0.9.8',
+    version='0.9.9',
     description='Keyset Pagination (seek method) for django.',
     long_description=long_description,
     long_description_content_type='text/markdown',
