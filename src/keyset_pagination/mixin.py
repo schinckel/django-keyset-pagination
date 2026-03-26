@@ -41,7 +41,4 @@ class PaginateMixin:
             page = paginator.page(page_number)
             return (paginator, page, page.object_list, page.has_other_pages())
         except InvalidPage as exc:
-            raise Http404(
-                _("Invalid page (%(page_number)s): %(message)s")
-                % {"page_number": page_number, "message": str(exc)}
-            ) from exc
+            raise Http404(_(f"Invalid page ({page_number}): {exc}")) from exc
