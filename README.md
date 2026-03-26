@@ -27,6 +27,19 @@ You won't be able to iterate through page numbers in a template in the same way:
 
 Page tokens are JSON payloads built from the ordering columns in your queryset. They are opaque from the caller's perspective and should be passed back unchanged. Ordering by `DecimalField` values is supported, and decimal cursor values are preserved without being coerced through binary floats.
 
+If your queryset does not call `.order_by(...)`, the paginator will also honor the model's `Meta.ordering`. This allows views that rely on a model's default ordering to paginate without repeating the same ordering in every queryset:
+
+    class Event(models.Model):
+        label = models.TextField()
+        sequence = models.IntegerField()
+
+        class Meta:
+            ordering = ("label", "sequence")
+
+    paginator = KeysetPaginator(Event.objects.all(), 10)
+
+If you explicitly clear ordering with `.order_by()`, the paginator still raises `ValueError`, because keyset pagination requires a deterministic ordering definition.
+
 Note that you do not get access to the length of the queryset, nor the number of pages, because these could be expensive queries. You really don't need to know that ;)
 
 However, I like to use GET forms to [enable pagination of filtered results](https://schinckel.net/2014/08/17/leveraging-html-and-django-forms%3A-pagination-of-filtered-results/):
