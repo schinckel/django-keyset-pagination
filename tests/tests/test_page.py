@@ -1,6 +1,8 @@
+from types import SimpleNamespace
+
 import pytest
 
-from keyset_pagination.paginator import InvalidPage, KeysetPaginator
+from keyset_pagination.paginator import InvalidPage, KeysetPage, KeysetPaginator
 
 from ..models import Event
 
@@ -47,3 +49,25 @@ def test_invalid_page():
     paginator = KeysetPaginator(Event.objects.order_by("-timestamp", "group"), 5)
     with pytest.raises(InvalidPage):
         paginator.page('["foo","bar"]')
+
+
+class CountingIterable:
+    def __init__(self, values):
+        self.values = values
+        self.iteration_count = 0
+
+    def __iter__(self):
+        self.iteration_count += 1
+        return iter(self.values)
+
+
+def test_object_list_is_materialized_once():
+    iterable = CountingIterable([1, 2, 3])
+    page = KeysetPage(iterable, None, SimpleNamespace(per_page=2))
+
+    first_object_list = page.object_list
+    second_object_list = page.object_list
+
+    assert [1, 2] == first_object_list
+    assert first_object_list is second_object_list
+    assert iterable.iteration_count == 1
