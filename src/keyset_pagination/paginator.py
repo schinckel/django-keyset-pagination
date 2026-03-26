@@ -168,6 +168,7 @@ class KeysetPage(Page):
         # self.object_list, which we don't want to set.
         # pylint: disable=super-init-not-called
         self._object_list = object_list
+        self._cached_object_list = None
         self.number = number
         self.direction = "previous" if number and number[0] else "next"
         self.paginator = paginator
@@ -193,21 +194,28 @@ class KeysetPage(Page):
 
     @property
     def object_list(self):  # NOQA
-        # We need to replace the normal attribute with a cached_property, so we can
-        # have it more lazily calculated, because we need to set
-        object_list = self._object_list
-        if not isinstance(object_list, list):
-            object_list = list(object_list)
+        # Lazily materialize and cache the object list in _cached_object_list
+        # instead of using the base Page.object_list attribute directly, so we
+        # can compute _continues and avoid re-evaluating the queryset.
+        if self._cached_object_list is None:
+            object_list = self._object_list
+            if not isinstance(object_list, list):
+                object_list = list(object_list)
+                # Save the fully materialized result so other methods (for example
+                # has_previous) don't need to touch the queryset again.
+                self._object_list = object_list
 
-        # What about orphans?
-        self._continues = len(object_list) > self.paginator.per_page
+            # What about orphans?
+            self._continues = len(object_list) > self.paginator.per_page
 
-        object_list = object_list[: self.paginator.per_page]
+            object_list = object_list[: self.paginator.per_page]
 
-        if self.direction == "previous":
-            object_list = list(reversed(object_list))
+            if self.direction == "previous":
+                object_list = list(reversed(object_list))
 
-        return object_list
+            self._cached_object_list = object_list
+
+        return self._cached_object_list
 
     def has_next(self):
         # We pre-fetch one extra object - this enables us to detect if we
