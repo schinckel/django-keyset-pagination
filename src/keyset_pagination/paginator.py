@@ -7,11 +7,17 @@ your view.
 """
 
 import json
+from decimal import Decimal
 from functools import reduce
 from operator import and_, or_
 
 from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
+
+
+class Encoder(json.JSONEncoder):
+    def default(self, o):
+        return str(o)
 
 
 def build_filter(key, value, include=False, flip=False):
@@ -26,11 +32,7 @@ def build_filter(key, value, include=False, flip=False):
         direction = not direction
 
     return models.Q(
-        **{
-            "{key}__{direction}{e}".format(
-                key=key.lstrip("-"), direction="lt" if direction else "gt", e="e" if include else ""
-            ): value
-        }
+        **{f"{key.lstrip('-')}__{'lt' if direction else 'gt'}{'e' if include else ''}": value}
     )
 
 
@@ -128,7 +130,7 @@ class KeysetPaginator(Paginator):
     def validate_number(self, number):
         if isinstance(number, str):
             try:
-                number = json.loads(number)
+                number = json.loads(number, parse_float=Decimal)
             except ValueError as exc:
                 raise InvalidPage("Invalid key") from exc
         if not number or number == 1:
@@ -225,7 +227,7 @@ class KeysetPage(Page):
         # JSON should be fine here? As long as the str(unknown_type) gives us something
         # we will be able to push back into the database for querying.
         return json.dumps(
-            [prev] + [attr_getter(instance, key) for key in self.paginator.keys], default=str
+            [prev] + [attr_getter(instance, key) for key in self.paginator.keys], cls=Encoder
         )
 
     def next_page_number(self):
