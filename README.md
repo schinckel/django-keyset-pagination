@@ -23,6 +23,8 @@ You won't be able to iterate through page numbers in a template in the same way:
       Next Page
     </a>
 
+Page tokens are JSON payloads built from the ordering columns in your queryset. They are opaque from the caller's perspective and should be passed back unchanged. Ordering by `DecimalField` values is supported, and decimal cursor values are preserved without being coerced through binary floats.
+
 Note that you do not get access to the length of the queryset, nor the number of pages, because these could be expensive queries. You really don't need to know that ;)
 
 However, I like to use GET forms to [enable pagination of filtered results](https://schinckel.net/2014/08/17/leveraging-html-and-django-forms%3A-pagination-of-filtered-results/):
