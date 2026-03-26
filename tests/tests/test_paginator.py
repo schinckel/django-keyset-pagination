@@ -9,14 +9,16 @@ from ..models import Event, Location
 
 @pytest.fixture
 def events():
-    Event.objects.bulk_create([
-        Event(timestamp='2017-01-01T01:23:45Z', group="bar", reading=2, ratio=Decimal('0.1232')),
-        Event(timestamp='2017-01-01T01:23:45Z', group="baz", reading=3, ratio=Decimal('0.1233')),
-        Event(timestamp='2017-01-01T01:23:45Z', group="foo", reading=1, ratio=Decimal('0.1231')),
-        Event(timestamp='2017-01-01T01:23:45Z', group="qux", reading=4, ratio=Decimal('0.1234')),
-        Event(timestamp='2017-01-01T05:23:45Z', group="foo", reading=5, ratio=Decimal('0.1235')),
-        Event(timestamp='2017-01-01T06:23:45Z', group="foo", reading=6, ratio=Decimal('0.1236')),
-    ])
+    Event.objects.bulk_create(
+        [
+            Event(timestamp="2017-01-01T01:23:45Z", group="bar", reading=2, ratio=Decimal("0.1232")),
+            Event(timestamp="2017-01-01T01:23:45Z", group="baz", reading=3, ratio=Decimal("0.1233")),
+            Event(timestamp="2017-01-01T01:23:45Z", group="foo", reading=1, ratio=Decimal("0.1231")),
+            Event(timestamp="2017-01-01T01:23:45Z", group="qux", reading=4, ratio=Decimal("0.1234")),
+            Event(timestamp="2017-01-01T05:23:45Z", group="foo", reading=5, ratio=Decimal("0.1235")),
+            Event(timestamp="2017-01-01T06:23:45Z", group="foo", reading=6, ratio=Decimal("0.1236")),
+        ]
+    )
 
 
 def test_paginator_single_page():
@@ -150,19 +152,19 @@ def test_invalid_page_number(events):
         paginator.page("2")
 
     with pytest.raises(InvalidPage):
-        paginator.page('[2,true')
+        paginator.page("[2,true")
 
 
 def test_decimal_in_page_number(events):
-    paginator = KeysetPaginator(Event.objects.order_by('ratio', 'pk'), 3)
+    paginator = KeysetPaginator(Event.objects.order_by("ratio", "pk"), 3)
     page = paginator.page(1)
 
     assert [1, 2, 3] == [x.reading for x in page.object_list]
     last_pk = page.object_list[-1].pk
-    assert page.next_page_number() == '[false, "0.1233", {}]'.format(last_pk)
+    assert page.next_page_number() == f'[false, "0.1233", {last_pk}]'
 
     page = paginator.page(page.next_page_number())
     assert [4, 5, 6] == [x.reading for x in page.object_list]
 
-    page = paginator.page('[false, 0.1233, {}]'.format(last_pk))
+    page = paginator.page(f"[false, 0.1233, {last_pk}]")
     assert [4, 5, 6] == [x.reading for x in page.object_list]

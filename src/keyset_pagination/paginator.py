@@ -34,9 +34,7 @@ def build_filter(key, value, include=False, flip=False):
 
     return models.Q(
         **{
-            "{key}__{direction}{e}".format(
-                key=key.lstrip("-"), direction="lt" if direction else "gt", e="e" if include else ""
-            ): value
+            f"{key.lstrip('-')}__{'lt' if direction else 'gt'}{'e' if include else ''}": value
         }
     )
 
@@ -231,10 +229,16 @@ class KeysetPage(Page):
         # the target page in, and the data from the first/last item in our object_list.
         # JSON should be fine here? As long as the str(unknown_type) gives us something
         # we will be able to push back into the database for querying.
+<<<<<<< HEAD
         return json.dumps([prev] + [
             attr_getter(instance, key)
             for key in self.paginator.keys
         ], cls=Encoder)
+=======
+        return json.dumps(
+            [prev] + [attr_getter(instance, key) for key in self.paginator.keys], cls=Encoder
+        )
+>>>>>>> f818bb3 (Fix decimal cursor pagination)
 
     def next_page_number(self):
         if self.has_next():
