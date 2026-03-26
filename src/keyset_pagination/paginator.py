@@ -5,6 +5,7 @@ of subsequent pages.
 Probably requires you use the `keyset_pagination.mixin.PaginateMixin` in
 your view.
 """
+
 import json
 from decimal import Decimal
 from functools import reduce
@@ -16,9 +17,7 @@ from django.db import models
 
 class Encoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, Decimal):
-            return str(o)
-        return super().default(o)
+        return str(o)
 
 
 def build_filter(key, value, include=False, flip=False):
@@ -33,9 +32,7 @@ def build_filter(key, value, include=False, flip=False):
         direction = not direction
 
     return models.Q(
-        **{
-            f"{key.lstrip('-')}__{'lt' if direction else 'gt'}{'e' if include else ''}": value
-        }
+        **{f"{key.lstrip('-')}__{'lt' if direction else 'gt'}{'e' if include else ''}": value}
     )
 
 
@@ -135,7 +132,7 @@ class KeysetPaginator(Paginator):
             try:
                 number = json.loads(number, parse_float=Decimal)
             except ValueError as exc:
-                raise InvalidPage('Invalid key') from exc
+                raise InvalidPage("Invalid key") from exc
         if not number or number == 1:
             return None
         if not isinstance(number, list):
@@ -229,16 +226,9 @@ class KeysetPage(Page):
         # the target page in, and the data from the first/last item in our object_list.
         # JSON should be fine here? As long as the str(unknown_type) gives us something
         # we will be able to push back into the database for querying.
-<<<<<<< HEAD
-        return json.dumps([prev] + [
-            attr_getter(instance, key)
-            for key in self.paginator.keys
-        ], cls=Encoder)
-=======
         return json.dumps(
             [prev] + [attr_getter(instance, key) for key in self.paginator.keys], cls=Encoder
         )
->>>>>>> f818bb3 (Fix decimal cursor pagination)
 
     def next_page_number(self):
         if self.has_next():
