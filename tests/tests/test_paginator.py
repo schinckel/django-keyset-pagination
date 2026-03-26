@@ -11,12 +11,24 @@ from ..models import Event, Location
 def events():
     Event.objects.bulk_create(
         [
-            Event(timestamp="2017-01-01T01:23:45Z", group="bar", reading=2, ratio=Decimal("0.1232")),
-            Event(timestamp="2017-01-01T01:23:45Z", group="baz", reading=3, ratio=Decimal("0.1233")),
-            Event(timestamp="2017-01-01T01:23:45Z", group="foo", reading=1, ratio=Decimal("0.1231")),
-            Event(timestamp="2017-01-01T01:23:45Z", group="qux", reading=4, ratio=Decimal("0.1234")),
-            Event(timestamp="2017-01-01T05:23:45Z", group="foo", reading=5, ratio=Decimal("0.1235")),
-            Event(timestamp="2017-01-01T06:23:45Z", group="foo", reading=6, ratio=Decimal("0.1236")),
+            Event(
+                timestamp="2017-01-01T01:23:45Z", group="bar", reading=2, ratio=Decimal("0.1232")
+            ),
+            Event(
+                timestamp="2017-01-01T01:23:45Z", group="baz", reading=3, ratio=Decimal("0.1233")
+            ),
+            Event(
+                timestamp="2017-01-01T01:23:45Z", group="foo", reading=1, ratio=Decimal("0.1231")
+            ),
+            Event(
+                timestamp="2017-01-01T01:23:45Z", group="qux", reading=4, ratio=Decimal("0.1234")
+            ),
+            Event(
+                timestamp="2017-01-01T05:23:45Z", group="foo", reading=5, ratio=Decimal("0.1235")
+            ),
+            Event(
+                timestamp="2017-01-01T06:23:45Z", group="foo", reading=6, ratio=Decimal("0.1236")
+            ),
         ]
     )
 
