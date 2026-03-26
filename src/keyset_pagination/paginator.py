@@ -5,6 +5,8 @@ of subsequent pages.
 Probably requires you use the `keyset_pagination.mixin.PaginateMixin` in
 your view.
 """
+
+import datetime
 import json
 from decimal import Decimal
 from functools import reduce
@@ -13,10 +15,22 @@ from operator import or_
 from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
 
+try:
+    from psycopg.types.range import Range as _PsycopgRange
+except ImportError:
+    try:
+        from psycopg2.extras import Range as _PsycopgRange
+    except ImportError:
+        _PsycopgRange = None
+
+_STR_SERIALIZABLE = (Decimal, datetime.datetime, datetime.date, datetime.time)
+if _PsycopgRange is not None:
+    _STR_SERIALIZABLE += (_PsycopgRange,)
+
 
 class Encoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, Decimal):
+        if isinstance(o, _STR_SERIALIZABLE):
             return str(o)
         return super().default(o)
 
@@ -33,9 +47,7 @@ def build_filter(key, value, include=False, flip=False):
         direction = not direction
 
     return models.Q(
-        **{
-            f"{key.lstrip('-')}__{'lt' if direction else 'gt'}{'e' if include else ''}": value
-        }
+        **{f"{key.lstrip('-')}__{'lt' if direction else 'gt'}{'e' if include else ''}": value}
     )
 
 
@@ -80,9 +92,7 @@ class KeysetPaginator(Paginator):
                 tie_filter = models.Q(
                     **{
                         tie_key.lstrip("-"): tie_value
-                        for tie_key, tie_value in zip(
-                            self.keys[:i], values[:i], strict=True
-                        )
+                        for tie_key, tie_value in zip(self.keys[:i], values[:i], strict=True)
                     }
                 )
             else:
@@ -130,7 +140,7 @@ class KeysetPaginator(Paginator):
             try:
                 number = json.loads(number, parse_float=Decimal)
             except ValueError as exc:
-                raise InvalidPage('Invalid key') from exc
+                raise InvalidPage("Invalid key") from exc
         if not number or number == 1:
             return None
         if not isinstance(number, list):
