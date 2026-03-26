@@ -17,6 +17,14 @@ class Location(models.Model):
     name = models.TextField(null=True, blank=True)
 
 
+class OrderedEvent(models.Model):
+    label = models.TextField()
+    sequence = models.IntegerField()
+
+    class Meta:
+        ordering = ("label", "sequence")
+
+
 try:
     from django.contrib.postgres.fields import DateRangeField
 

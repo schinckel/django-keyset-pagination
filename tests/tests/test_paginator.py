@@ -4,7 +4,7 @@ import pytest
 
 from keyset_pagination.paginator import InvalidPage, KeysetPaginator
 
-from ..models import Event, Location
+from ..models import Event, Location, OrderedEvent
 
 
 @pytest.fixture
@@ -134,6 +134,31 @@ def test_paginator_lookup_keys():
 def test_friendly_error_when_no_keys():
     with pytest.raises(ValueError):
         KeysetPaginator(Event.objects.all(), 10)
+
+
+def test_uses_meta_ordering_when_queryset_has_no_explicit_order_by():
+    OrderedEvent.objects.bulk_create(
+        [
+            OrderedEvent(label="b", sequence=3),
+            OrderedEvent(label="a", sequence=2),
+            OrderedEvent(label="a", sequence=1),
+            OrderedEvent(label="c", sequence=4),
+        ]
+    )
+
+    paginator = KeysetPaginator(OrderedEvent.objects.all(), 2)
+    page = paginator.page(1)
+
+    assert paginator.keys == ["label", "sequence"]
+    assert [x.sequence for x in page.object_list] == [1, 2]
+
+    page = paginator.page(page.next_page_number())
+    assert [x.sequence for x in page.object_list] == [3, 4]
+
+
+def test_explicitly_clearing_ordering_still_errors():
+    with pytest.raises(ValueError):
+        KeysetPaginator(OrderedEvent.objects.order_by(), 10)
 
 
 def test_ignore_pagination_when_empty_list():

@@ -52,11 +52,25 @@ def attr_getter(instance, key):
 class KeysetPaginator(Paginator):
     "Keyset Pagination: does not use OFFSET."
 
+    @staticmethod
+    def _get_ordering_keys(object_list):
+        order_by = list(object_list.query.order_by)
+        if order_by:
+            return order_by
+
+        # If the queryset is relying on model Meta.ordering, use that as our keyset.
+        if object_list.query.default_ordering:
+            default_ordering = list(getattr(object_list.model._meta, "ordering", ()) or ())
+            if default_ordering:
+                return default_ordering
+
+        return []
+
     def __init__(self, object_list, per_page, orphans=0, allow_empty_first_page=True):
         if object_list == [] or object_list is None:
             self.keys = ["pk"]
         else:
-            self.keys = object_list.query.order_by
+            self.keys = self._get_ordering_keys(object_list)
 
         if not self.keys:
             raise ValueError(
@@ -229,16 +243,9 @@ class KeysetPage(Page):
         # the target page in, and the data from the first/last item in our object_list.
         # JSON should be fine here? As long as the str(unknown_type) gives us something
         # we will be able to push back into the database for querying.
-<<<<<<< HEAD
-        return json.dumps([prev] + [
-            attr_getter(instance, key)
-            for key in self.paginator.keys
-        ], cls=Encoder)
-=======
         return json.dumps(
             [prev] + [attr_getter(instance, key) for key in self.paginator.keys], cls=Encoder
         )
->>>>>>> f818bb3 (Fix decimal cursor pagination)
 
     def next_page_number(self):
         if self.has_next():
