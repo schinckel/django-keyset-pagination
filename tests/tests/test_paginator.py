@@ -148,10 +148,11 @@ def test_decimal_in_page_number(events):
     page = paginator.page(1)
 
     assert [1, 2, 3] == [x.reading for x in page.object_list]
-    assert page.next_page_number() == '[false, "0.1233", 2]'
+    last_pk = page.object_list[-1].pk
+    assert page.next_page_number() == f'[false, "0.1233", {last_pk}]'
 
     page = paginator.page(page.next_page_number())
     assert [4, 5, 6] == [x.reading for x in page.object_list]
 
-    page = paginator.page('[false, 0.1233, 2]')
+    page = paginator.page(f'[false, 0.1233, {last_pk}]')
     assert [4, 5, 6] == [x.reading for x in page.object_list]
