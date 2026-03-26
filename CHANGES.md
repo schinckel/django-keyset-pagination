@@ -1,8 +1,6 @@
 # Release notes.
 
-* Unreleased: Preserve decimal cursor precision when paginating on `DecimalField` values, including existing page tokens that contain bare JSON numbers.
-
-* Unreleased: Modernize packaging and CI for GitHub with `pyproject.toml`, GitHub Actions, Ruff, pre-commit, Dependabot, and an expanded Python/Django/database test matrix.
+* Unreleased: Drop support for Python 2.7. Modernize packaging and CI for GitHub with `pyproject.toml`, GitHub Actions, Ruff, pre-commit, Dependabot, and an expanded Python/Django/database test matrix. Also preserve decimal cursor precision when paginating on `DecimalField` values, including existing page tokens that contain bare JSON numbers.
 
 * 0.9.9: Gracefully handle a `page=<valid json but invalid key string>`. For instance, this could be `page=2`, which users could enter thinking they are clever.
 
