@@ -1,5 +1,7 @@
 # Keyset Pagination for Django.
 
+[![CI](https://github.com/schinckel/django-keyset-pagination/actions/workflows/ci.yml/badge.svg)](https://github.com/schinckel/django-keyset-pagination/actions/workflows/ci.yml)
+
 Django pagination uses the LIMIT/OFFSET method. This is fine for smaller offsets, but once you start getting beyond a few pages, it can perform really badly. This is because the database needs to fetch all of the previous rows, even though it discards them.
 
 Using Keyset Pagination allows for better performing "next page" fetches, at the cost of not being able to randomly fetch a page. That is, if you know the last element from page N-1, then you may fetch page N, but otherwise you really can't.
@@ -41,5 +43,22 @@ However, I like to use GET forms to [enable pagination of filtered results](http
       Next Page &rarr;
     <button>
 
+
+## Supported versions
+
+The package is now tested against modern Django and Python releases via GitHub Actions, with a current matrix covering Django 4.2, 5.2, and 6.0 on SQLite and additional integration coverage for PostgreSQL and MySQL.
+
+## Development
+
+```bash
+python -m pip install -e ".[dev,test]"
+pre-commit install
+tox -e py312-django52-sqlite
+tox -p auto
+```
+
+The repository includes GitHub Actions workflows for CI and release publishing, Dependabot updates, Ruff linting/formatting, and tox-driven test environments for SQLite and PostgreSQL. For a full local run, use `tox -p auto` or `make test-all` to execute the tox matrix in parallel.
+
+For local MySQL runs on macOS with Homebrew, install `mysql-client` and `pkgconf`. The MySQL tox environments default `MYSQLCLIENT_CFLAGS` and `MYSQLCLIENT_LDFLAGS` to the Homebrew `mysql-client` paths, and you can override them with environment variables if your local setup differs.
 
 See https://schinckel.net/2018/11/23/keyset-pagination-in-django/ for more details about how this package works.

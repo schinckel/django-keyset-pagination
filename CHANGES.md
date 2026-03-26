@@ -1,5 +1,7 @@
 # Release notes.
 
+* Unreleased: Modernize packaging and CI for GitHub with `pyproject.toml`, GitHub Actions, Ruff, pre-commit, Dependabot, and an expanded Python/Django/database test matrix.
+
 * 0.9.9: Gracefully handle a `page=<valid json but invalid key string>`. For instance, this could be `page=2`, which users could enter thinking they are clever.
 
 * 0.9.8: Correctly handle a page=1 input that comes from a view. This will be a string, which should be supported since we handle an integer of 1.

@@ -1,0 +1,13 @@
+.coverage
+.coverage.*
+.pytest_cache/
+.ruff_cache/
+.tox/
+.venv/
+__pycache__/
+build/
+dist/
+htmlcov/
+pip-wheel-metadata/
+src/*.egg-info/
+.DS_Store

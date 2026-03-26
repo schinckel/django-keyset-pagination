@@ -8,7 +8,7 @@ class Event(models.Model):
     group = models.TextField(null=True, blank=True)
     reading = models.IntegerField()
     location = models.ForeignKey(
-        'tests.Location', related_name='events', on_delete=models.CASCADE, null=True, blank=True,
+        "tests.Location", related_name="events", on_delete=models.CASCADE, null=True, blank=True
     )
 
 

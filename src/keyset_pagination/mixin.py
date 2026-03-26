@@ -5,7 +5,7 @@ numbers. This is required for keyset pagination (in most cases).
 
 from django.core.paginator import InvalidPage
 from django.http import Http404
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 # pylint: disable=too-few-public-methods
 
@@ -19,8 +19,10 @@ class PaginateMixin:
         mechanism instead, as it is more flexible.
         """
         paginator = self.get_paginator(
-            queryset, page_size, orphans=self.get_paginate_orphans(),
-            allow_empty_first_page=self.get_allow_empty()
+            queryset,
+            page_size,
+            orphans=self.get_paginate_orphans(),
+            allow_empty_first_page=self.get_allow_empty(),
         )
         page_kwarg = self.page_kwarg
         page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
@@ -30,8 +32,8 @@ class PaginateMixin:
         # to the paginator, to be honest.
         try:
             page_number = paginator.validate_number(page)
-        except ValueError:
-            raise Http404(_('Page could not be parsed.'))
+        except ValueError as exc:
+            raise Http404(_("Page could not be parsed.")) from exc
         # We let InvalidPage errors pass, because we'll deal with them in the next
         # section.
 
@@ -40,8 +42,6 @@ class PaginateMixin:
             return (paginator, page, page.object_list, page.has_other_pages())
         except InvalidPage as exc:
             raise Http404(
-                _('Invalid page (%(page_number)s): %(message)s') % {
-                    'page_number': page_number,
-                    'message': str(exc)
-                }
-            )
+                _("Invalid page (%(page_number)s): %(message)s")
+                % {"page_number": page_number, "message": str(exc)}
+            ) from exc
