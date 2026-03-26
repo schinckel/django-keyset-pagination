@@ -23,7 +23,7 @@ class Encoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Decimal):
             return str(o)
-        return str(o)
+        return super().default(o)
 
 
 def build_filter(key, value, include=False, flip=False):
