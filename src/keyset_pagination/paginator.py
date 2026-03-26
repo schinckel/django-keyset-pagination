@@ -118,7 +118,11 @@ class KeysetPaginator(Paginator):
     def page(self, number):
         number = self.validate_number(number)
 
-        if number is None or not self.object_list:
+        if (
+            number is None
+            or self.object_list is None
+            or (isinstance(self.object_list, list) and len(self.object_list) == 0)
+        ):
             object_list = self.object_list
         else:
             object_list = self.object_list.filter(self._get_page_filters(number)).order_by(

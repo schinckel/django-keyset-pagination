@@ -180,3 +180,15 @@ def test_decimal_in_page_number(events):
 
     page = paginator.page(f"[false, 0.1233, {last_pk}]")
     assert [4, 5, 6] == [x.reading for x in page.object_list]
+
+
+def test_non_first_page_does_not_coerce_queryset_to_bool(events, monkeypatch):
+    paginator = KeysetPaginator(Event.objects.order_by("reading"), 3)
+
+    def fail_on_bool(_self):
+        raise AssertionError("QuerySet.__bool__ should not be called for cursor pages")
+
+    monkeypatch.setattr(type(paginator.object_list), "__bool__", fail_on_bool)
+
+    next_page = paginator.page("[false, 3]")
+    assert [4, 5, 6] == [x.reading for x in next_page.object_list]
