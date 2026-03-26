@@ -92,9 +92,12 @@ def test_paginator_previous_links(events):
 
 def test_paginator_with_multiple_ordering_keys():
     Event.objects.bulk_create(
-        [Event(timestamp="2019-01-01T01:02:03Z", group="foo", reading=i) for i in range(20)]
+        [
+            Event(timestamp="2019-01-01T01:02:03Z", tag="ordered", group="foo", reading=i)
+            for i in range(20)
+        ]
     )
-    paginator = KeysetPaginator(Event.objects.order_by("-timestamp", "group", "pk"), 10)
+    paginator = KeysetPaginator(Event.objects.order_by("tag", "group", "reading", "pk"), 10)
     page = paginator.page(1)
     assert 10 == len(page.object_list)
     assert page.has_next()
@@ -104,6 +107,26 @@ def test_paginator_with_multiple_ordering_keys():
     assert 10 == len(page.object_list)
     assert page.has_previous()
     assert not page.has_next()
+
+
+def test_paginator_three_or_more_keys_keep_lexicographic_boundaries():
+    Event.objects.bulk_create(
+        [
+            Event(timestamp="2019-01-01T01:02:03Z", tag="k", group="a", reading=100),
+            Event(timestamp="2019-01-01T01:02:03Z", tag="k", group="b", reading=1),
+            Event(timestamp="2019-01-01T01:02:03Z", tag="k", group="b", reading=2),
+            Event(timestamp="2019-01-01T01:02:03Z", tag="k", group="c", reading=1),
+            Event(timestamp="2019-01-01T01:02:03Z", tag="k", group="c", reading=2),
+        ]
+    )
+    paginator = KeysetPaginator(Event.objects.order_by("tag", "group", "reading", "pk"), 3)
+
+    page = paginator.page(1)
+    assert [("a", 100), ("b", 1), ("b", 2)] == [(x.group, x.reading) for x in page.object_list]
+
+    page = paginator.page(page.next_page_number())
+    assert [("c", 1), ("c", 2)] == [(x.group, x.reading) for x in page.object_list]
+    assert page.next_page_number() is None
 
 
 def test_paginator_lookup_keys():

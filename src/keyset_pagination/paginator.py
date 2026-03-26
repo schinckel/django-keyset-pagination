@@ -8,7 +8,7 @@ your view.
 import json
 from decimal import Decimal
 from functools import reduce
-from operator import and_, or_
+from operator import or_
 
 from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
@@ -72,31 +72,26 @@ class KeysetPaginator(Paginator):
         flip = number[0]
         values = number[1:]
 
-        # We can build up the various Q objects we will need for this query beforehand.
-        # These are the filters that apply to break a tie on the previous level.
-        key_filters = [
-            build_filter(key, value, flip=flip)
-            for key, value in zip(self.keys, values, strict=True)
-        ]
-        # And these are the filters that detect a tie at each level.
-        equality_filters = [
-            models.Q(
-                **{
-                    key.lstrip("-"): value
-                    for key, value in zip(self.keys[:i], values, strict=False)
-                }
-            )
-            for i in range(len(self.keys))
-        ]
-
         # We want to use (A < ? OR (A = ? AND B < ?) OR (A = ? AND B = ? AND C < ?))
         # Except that the < could be a > depending upon the sort direction.
+        branch_filters = []
+        for i, (key, value) in enumerate(zip(self.keys, values, strict=True)):
+            if i:
+                tie_filter = models.Q(
+                    **{
+                        tie_key.lstrip("-"): tie_value
+                        for tie_key, tie_value in zip(
+                            self.keys[:i], values[:i], strict=True
+                        )
+                    }
+                )
+            else:
+                tie_filter = models.Q()
+            branch_filters.append(tie_filter & build_filter(key, value, flip=flip))
+
         page_filters = reduce(
             or_,
-            [
-                reduce(and_, [key_filter] + equality_filters[: i - 1])
-                for i, key_filter in enumerate(key_filters)
-            ],
+            branch_filters,
         )
         # To make the query planner able to use an index, we use an AND with the
         # filters above and "A <= ?" (or >=). This allows the query planner to use
@@ -229,16 +224,9 @@ class KeysetPage(Page):
         # the target page in, and the data from the first/last item in our object_list.
         # JSON should be fine here? As long as the str(unknown_type) gives us something
         # we will be able to push back into the database for querying.
-<<<<<<< HEAD
-        return json.dumps([prev] + [
-            attr_getter(instance, key)
-            for key in self.paginator.keys
-        ], cls=Encoder)
-=======
         return json.dumps(
             [prev] + [attr_getter(instance, key) for key in self.paginator.keys], cls=Encoder
         )
->>>>>>> f818bb3 (Fix decimal cursor pagination)
 
     def next_page_number(self):
         if self.has_next():
