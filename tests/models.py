@@ -8,7 +8,7 @@ class Event(models.Model):
     group = models.TextField(null=True, blank=True)
     reading = models.IntegerField()
     location = models.ForeignKey(
-        'tests.Location', related_name='events', on_delete=models.CASCADE, null=True, blank=True,
+        "tests.Location", related_name="events", on_delete=models.CASCADE, null=True, blank=True
     )
     ratio = models.DecimalField(max_digits=5, decimal_places=4, null=True, blank=True)
 

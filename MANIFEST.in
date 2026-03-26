@@ -1,4 +1,0 @@
-recursive-include src *.py
-include README.rst
-include LICENSE
-recursive-exclude src *.pyc
