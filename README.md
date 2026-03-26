@@ -61,7 +61,8 @@ However, I like to use GET forms to [enable pagination of filtered results](http
 
 ## Supported versions
 
-The package is now tested against modern Django and Python releases via GitHub Actions, with a current matrix covering Django 4.2, 5.2, and 6.0 on SQLite and additional integration coverage for PostgreSQL and MySQL.
+The package supports Python 3.10+ and Django `>=4.2,<6.1`.
+It is tested against modern Django and Python releases via GitHub Actions, with a current matrix covering Django 4.2, 5.2, and 6.0 on SQLite and additional integration coverage for PostgreSQL and MySQL.
 
 ## Development
 
