@@ -121,7 +121,7 @@ class KeysetPaginator(Paginator):
     def page(self, number):
         number = self.validate_number(number)
 
-        if number is None or not self.object_list:
+        if number is None or (isinstance(self.object_list, list) and not self.object_list):
             object_list = self.object_list
         else:
             object_list = self.object_list.filter(self._get_page_filters(number)).order_by(
@@ -229,16 +229,9 @@ class KeysetPage(Page):
         # the target page in, and the data from the first/last item in our object_list.
         # JSON should be fine here? As long as the str(unknown_type) gives us something
         # we will be able to push back into the database for querying.
-<<<<<<< HEAD
-        return json.dumps([prev] + [
-            attr_getter(instance, key)
-            for key in self.paginator.keys
-        ], cls=Encoder)
-=======
         return json.dumps(
             [prev] + [attr_getter(instance, key) for key in self.paginator.keys], cls=Encoder
         )
->>>>>>> f818bb3 (Fix decimal cursor pagination)
 
     def next_page_number(self):
         if self.has_next():
