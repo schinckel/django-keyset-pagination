@@ -26,7 +26,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = ["Django>=4.2"]
+dependencies = ["Django>=4.2,<6.1"]
 
 [project.optional-dependencies]
 test = [

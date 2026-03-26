@@ -1,6 +1,6 @@
 # Release notes.
 
-* Unreleased: Drop support for Python 2.7. Modernize packaging and CI for GitHub with `pyproject.toml`, GitHub Actions, Ruff, pre-commit, Dependabot, and an expanded Python/Django/database test matrix. Also preserve decimal cursor precision when paginating on `DecimalField` values, including existing page tokens that contain bare JSON numbers.
+* Unreleased: Drop support for Python 2.7. Modernize packaging and CI for GitHub with `pyproject.toml`, GitHub Actions, Ruff, pre-commit, Dependabot, and an expanded Python/Django/database test matrix. Also preserve decimal cursor precision when paginating on `DecimalField` values, including existing page tokens that contain bare JSON numbers. Constrain package metadata to the tested Django range (`>=4.2,<6.1`) and use modern translation imports for compatibility with current Django releases.
 
 * 0.9.9: Gracefully handle a `page=<valid json but invalid key string>`. For instance, this could be `page=2`, which users could enter thinking they are clever.
 
