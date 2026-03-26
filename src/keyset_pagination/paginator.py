@@ -6,18 +6,33 @@ Probably requires you use the `keyset_pagination.mixin.PaginateMixin` in
 your view.
 """
 
+import datetime
 import json
 from decimal import Decimal
 from functools import reduce
-from operator import and_, or_
+from operator import or_
 
 from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
 
+try:
+    from psycopg.types.range import Range as _PsycopgRange
+except ImportError:
+    try:
+        from psycopg2.extras import Range as _PsycopgRange
+    except ImportError:
+        _PsycopgRange = None
+
+_STR_SERIALIZABLE = (Decimal, datetime.datetime, datetime.date, datetime.time)
+if _PsycopgRange is not None:
+    _STR_SERIALIZABLE += (_PsycopgRange,)
+
 
 class Encoder(json.JSONEncoder):
     def default(self, o):
-        return str(o)
+        if isinstance(o, _STR_SERIALIZABLE):
+            return str(o)
+        return super().default(o)
 
 
 def build_filter(key, value, include=False, flip=False):
@@ -69,31 +84,24 @@ class KeysetPaginator(Paginator):
         flip = number[0]
         values = number[1:]
 
-        # We can build up the various Q objects we will need for this query beforehand.
-        # These are the filters that apply to break a tie on the previous level.
-        key_filters = [
-            build_filter(key, value, flip=flip)
-            for key, value in zip(self.keys, values, strict=True)
-        ]
-        # And these are the filters that detect a tie at each level.
-        equality_filters = [
-            models.Q(
-                **{
-                    key.lstrip("-"): value
-                    for key, value in zip(self.keys[:i], values, strict=False)
-                }
-            )
-            for i in range(len(self.keys))
-        ]
-
         # We want to use (A < ? OR (A = ? AND B < ?) OR (A = ? AND B = ? AND C < ?))
         # Except that the < could be a > depending upon the sort direction.
+        branch_filters = []
+        for i, (key, value) in enumerate(zip(self.keys, values, strict=True)):
+            if i:
+                tie_filter = models.Q(
+                    **{
+                        tie_key.lstrip("-"): tie_value
+                        for tie_key, tie_value in zip(self.keys[:i], values[:i], strict=True)
+                    }
+                )
+            else:
+                tie_filter = models.Q()
+            branch_filters.append(tie_filter & build_filter(key, value, flip=flip))
+
         page_filters = reduce(
             or_,
-            [
-                reduce(and_, [key_filter] + equality_filters[: i - 1])
-                for i, key_filter in enumerate(key_filters)
-            ],
+            branch_filters,
         )
         # To make the query planner able to use an index, we use an AND with the
         # filters above and "A <= ?" (or >=). This allows the query planner to use
@@ -118,7 +126,11 @@ class KeysetPaginator(Paginator):
     def page(self, number):
         number = self.validate_number(number)
 
-        if number is None or not self.object_list:
+        if (
+            number is None
+            or self.object_list is None
+            or (isinstance(self.object_list, list) and len(self.object_list) == 0)
+        ):
             object_list = self.object_list
         else:
             object_list = self.object_list.filter(self._get_page_filters(number)).order_by(
@@ -164,6 +176,7 @@ class KeysetPage(Page):
         # self.object_list, which we don't want to set.
         # pylint: disable=super-init-not-called
         self._object_list = object_list
+        self._cached_object_list = None
         self.number = number
         self.direction = "previous" if number and number[0] else "next"
         self.paginator = paginator
@@ -189,21 +202,28 @@ class KeysetPage(Page):
 
     @property
     def object_list(self):  # NOQA
-        # We need to replace the normal attribute with a cached_property, so we can
-        # have it more lazily calculated, because we need to set
-        object_list = self._object_list
-        if not isinstance(object_list, list):
-            object_list = list(object_list)
+        # Lazily materialize and cache the object list in _cached_object_list
+        # instead of using the base Page.object_list attribute directly, so we
+        # can compute _continues and avoid re-evaluating the queryset.
+        if self._cached_object_list is None:
+            object_list = self._object_list
+            if not isinstance(object_list, list):
+                object_list = list(object_list)
+                # Save the fully materialized result so other methods (for example
+                # has_previous) don't need to touch the queryset again.
+                self._object_list = object_list
 
-        # What about orphans?
-        self._continues = len(object_list) > self.paginator.per_page
+            # What about orphans?
+            self._continues = len(object_list) > self.paginator.per_page
 
-        object_list = object_list[: self.paginator.per_page]
+            object_list = object_list[: self.paginator.per_page]
 
-        if self.direction == "previous":
-            object_list = list(reversed(object_list))
+            if self.direction == "previous":
+                object_list = list(reversed(object_list))
 
-        return object_list
+            self._cached_object_list = object_list
+
+        return self._cached_object_list
 
     def has_next(self):
         # We pre-fetch one extra object - this enables us to detect if we
