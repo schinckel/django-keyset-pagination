@@ -5,8 +5,8 @@ of subsequent pages.
 Probably requires you use the `keyset_pagination.mixin.PaginateMixin` in
 your view.
 """
-
 import json
+from decimal import Decimal
 from functools import reduce
 from operator import and_, or_
 
@@ -17,6 +17,13 @@ try:
     text = (unicode, str)   # NOQA
 except NameError:
     text = (str,)           # NOQA
+
+
+class Encoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return str(o)
+        return str(o)
 
 
 def build_filter(key, value, include=False, flip=False):
@@ -129,7 +136,7 @@ class KeysetPaginator(Paginator):
     def validate_number(self, number):
         if isinstance(number, text):
             try:
-                number = json.loads(number)
+                number = json.loads(number, parse_float=Decimal)
             except ValueError:
                 raise InvalidPage('Invalid key')
         if not number or number == 1:
@@ -228,7 +235,7 @@ class KeysetPage(Page):
         return json.dumps([prev] + [
             attr_getter(instance, key)
             for key in self.paginator.keys
-        ], default=str)
+        ], cls=Encoder)
 
     def next_page_number(self):
         if self.has_next():

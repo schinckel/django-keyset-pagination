@@ -10,6 +10,7 @@ class Event(models.Model):
     location = models.ForeignKey(
         'tests.Location', related_name='events', on_delete=models.CASCADE, null=True, blank=True,
     )
+    ratio = models.DecimalField(max_digits=5, decimal_places=4, null=True, blank=True)
 
 
 class Location(models.Model):

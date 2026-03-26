@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 
 from keyset_pagination.paginator import KeysetPaginator, InvalidPage
@@ -8,12 +10,12 @@ from ..models import Event, Location
 @pytest.fixture
 def events():
     Event.objects.bulk_create([
-        Event(timestamp='2017-01-01T01:23:45Z', group="bar", reading=2),
-        Event(timestamp='2017-01-01T01:23:45Z', group="baz", reading=3),
-        Event(timestamp='2017-01-01T01:23:45Z', group="foo", reading=1),
-        Event(timestamp='2017-01-01T01:23:45Z', group="qux", reading=4),
-        Event(timestamp='2017-01-01T05:23:45Z', group="foo", reading=5),
-        Event(timestamp='2017-01-01T06:23:45Z', group="foo", reading=6),
+        Event(timestamp='2017-01-01T01:23:45Z', group="bar", reading=2, ratio=Decimal('0.1232')),
+        Event(timestamp='2017-01-01T01:23:45Z', group="baz", reading=3, ratio=Decimal('0.1233')),
+        Event(timestamp='2017-01-01T01:23:45Z', group="foo", reading=1, ratio=Decimal('0.1231')),
+        Event(timestamp='2017-01-01T01:23:45Z', group="qux", reading=4, ratio=Decimal('0.1234')),
+        Event(timestamp='2017-01-01T05:23:45Z', group="foo", reading=5, ratio=Decimal('0.1235')),
+        Event(timestamp='2017-01-01T06:23:45Z', group="foo", reading=6, ratio=Decimal('0.1236')),
     ])
 
 
@@ -139,3 +141,17 @@ def test_invalid_page_number(events):
 
     with pytest.raises(InvalidPage):
         paginator.page('[2,true')
+
+
+def test_decimal_in_page_number(events):
+    paginator = KeysetPaginator(Event.objects.order_by('ratio', 'pk'), 3)
+    page = paginator.page(1)
+
+    assert [1, 2, 3] == [x.reading for x in page.object_list]
+    assert page.next_page_number() == '[false, "0.1233", 2]'
+
+    page = paginator.page(page.next_page_number())
+    assert [4, 5, 6] == [x.reading for x in page.object_list]
+
+    page = paginator.page('[false, 0.1233, 2]')
+    assert [4, 5, 6] == [x.reading for x in page.object_list]
