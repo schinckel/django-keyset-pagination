@@ -5,6 +5,7 @@ of subsequent pages.
 Probably requires you use the `keyset_pagination.mixin.PaginateMixin` in
 your view.
 """
+import datetime
 import json
 from decimal import Decimal
 from functools import reduce
@@ -13,10 +14,26 @@ from operator import or_
 from django.core.paginator import InvalidPage, Page, Paginator
 from django.db import models
 
+# Collect range types from psycopg2 and/or psycopg3 if available, so that
+# ordering by Postgres range fields can be serialised as strings.
+_extra_types: tuple[type, ...] = (Decimal, datetime.datetime, datetime.date, datetime.time)
+try:
+    from psycopg2.extras import Range as _Psycopg2Range
+
+    _extra_types += (_Psycopg2Range,)
+except ImportError:
+    pass
+try:
+    from psycopg.types.range import Range as _PsycopgRange
+
+    _extra_types += (_PsycopgRange,)
+except ImportError:
+    pass
+
 
 class Encoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, Decimal):
+        if isinstance(o, _extra_types):
             return str(o)
         return super().default(o)
 
