@@ -10,6 +10,7 @@ from packaging.requirements import Requirement
 
 def test_paginate_mixin_imports_on_modern_django():
     from keyset_pagination.mixin import PaginateMixin
+
     assert PaginateMixin is not None
 
 
