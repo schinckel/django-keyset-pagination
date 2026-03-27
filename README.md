@@ -39,11 +39,11 @@ If your queryset does not call `.order_by(...)`, the paginator will also honor t
 
 ```python
 class Event(models.Model):
-    label = models.TextField()
-    sequence = models.IntegerField()
+    timestamp = models.DateTimeField()
+    group = models.TextField()
 
     class Meta:
-        ordering = ("label", "sequence")
+        ordering = ("-timestamp", "group", "pk")
 
 
 paginator = KeysetPaginator(Event.objects.all(), 10)
